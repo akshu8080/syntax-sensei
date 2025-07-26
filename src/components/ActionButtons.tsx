@@ -8,9 +8,10 @@ interface ActionButtonsProps {
   onReset: () => void;
   isAnalyzing: boolean;
   hasCode: boolean;
+  hasApiKey: boolean;
 }
 
-export const ActionButtons = ({ onAnalyze, onReset, isAnalyzing, hasCode }: ActionButtonsProps) => {
+export const ActionButtons = ({ onAnalyze, onReset, isAnalyzing, hasCode, hasApiKey }: ActionButtonsProps) => {
   return (
     <Card className="p-6 shadow-elegant">
       <div className="space-y-4">
@@ -24,11 +25,11 @@ export const ActionButtons = ({ onAnalyze, onReset, isAnalyzing, hasCode }: Acti
         <div className="grid grid-cols-2 gap-3">
           <Button
             onClick={onAnalyze}
-            disabled={!hasCode || isAnalyzing}
+            disabled={!hasCode || !hasApiKey || isAnalyzing}
             className="h-12 bg-gradient-to-r from-primary to-primary-glow hover:from-primary-glow hover:to-primary shadow-glow transition-all duration-300"
           >
             <Play className="h-4 w-4 mr-2" />
-            {isAnalyzing ? "Analyzing..." : "Analyze Code"}
+            {isAnalyzing ? "Analyzing..." : !hasApiKey ? "Need API Key" : "Analyze Code"}
           </Button>
           
           <Button

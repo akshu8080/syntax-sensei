@@ -4,14 +4,17 @@ import { CodeEditor } from "@/components/CodeEditor";
 import { ReviewResults } from "@/components/ReviewResults";
 import { ActionButtons } from "@/components/ActionButtons";
 import { FeatureHighlights } from "@/components/FeatureHighlights";
+import { APIKeyManager } from "@/components/APIKeyManager";
 import { useToast } from "@/hooks/use-toast";
 import { analyzeCode } from "@/utils/codeAnalyzer";
+import { analyzeCodeWithAI } from "@/utils/aiAnalyzer";
 
 const Index = () => {
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("javascript");
+  const [apiKey, setApiKey] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResults, setAnalysisResults] = useState<{issues: any[], overallScore: number} | null>(null);
+  const [analysisResults, setAnalysisResults] = useState<{issues: any[], overallScore: number, explanation?: string} | null>(null);
   const { toast } = useToast();
 
   const handleAnalyze = async () => {
@@ -24,18 +27,40 @@ const Index = () => {
       return;
     }
 
+    if (!apiKey.trim()) {
+      toast({
+        title: "API Key Required",
+        description: "Please enter your Perplexity AI API key to use AI analysis.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsAnalyzing(true);
     
-    // Simulate API call delay
-    setTimeout(() => {
-      const results = analyzeCode(code, language);
+    try {
+      // Use AI analysis if API key is provided
+      const results = await analyzeCodeWithAI({ code, language, apiKey });
       setAnalysisResults(results);
-      setIsAnalyzing(false);
       toast({
-        title: "Analysis complete!",
-        description: `Found ${results.issues.length} issues with an overall score of ${results.overallScore}/100.`,
+        title: "AI Analysis Complete!",
+        description: `Found ${results.issues.length} issues with a score of ${results.overallScore}/100.`,
       });
-    }, 1500);
+    } catch (error) {
+      console.error('AI Analysis failed:', error);
+      // Fallback to rule-based analysis
+      const results = analyzeCode(code, language);
+      setAnalysisResults({
+        ...results,
+        explanation: "AI analysis failed, using rule-based analysis as fallback."
+      });
+      toast({
+        title: "Fallback Analysis Complete",
+        description: `AI failed, used rule-based analysis. Found ${results.issues.length} issues.`,
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const handleReset = () => {
@@ -68,11 +93,13 @@ const Index = () => {
                 onReset={handleReset}
                 isAnalyzing={isAnalyzing}
                 hasCode={!!code.trim()}
+                hasApiKey={!!apiKey.trim()}
               />
               
-              <div className="md:hidden lg:block">
-                <FeatureHighlights />
-              </div>
+              <APIKeyManager
+                apiKey={apiKey}
+                onApiKeyChange={setApiKey}
+              />
             </div>
           </div>
           
