@@ -5,61 +5,13 @@ import { ReviewResults } from "@/components/ReviewResults";
 import { ActionButtons } from "@/components/ActionButtons";
 import { FeatureHighlights } from "@/components/FeatureHighlights";
 import { useToast } from "@/hooks/use-toast";
-
-// Mock data for demonstration
-const mockAnalysis = {
-  issues: [
-    {
-      type: "error" as const,
-      title: "Missing semicolon",
-      description: "JavaScript statements should end with a semicolon for consistency and to avoid potential issues with automatic semicolon insertion.",
-      line: 5,
-      severity: "medium" as const
-    },
-    {
-      type: "warning" as const,
-      title: "Unused variable",
-      description: "The variable 'tempData' is declared but never used. Consider removing it or implementing its intended functionality.",
-      line: 12,
-      severity: "low" as const
-    },
-    {
-      type: "suggestion" as const,
-      title: "Use const instead of let",
-      description: "Since 'userName' is never reassigned, consider using 'const' instead of 'let' for better code clarity and immutability.",
-      line: 8,
-      severity: "low" as const
-    },
-    {
-      type: "info" as const,
-      title: "Consider using arrow function",
-      description: "Arrow functions provide more concise syntax and lexical 'this' binding. Consider converting this function for consistency with modern ES6+ practices.",
-      line: 15,
-      severity: "low" as const
-    }
-  ],
-  overallScore: 73
-};
+import { analyzeCode } from "@/utils/codeAnalyzer";
 
 const Index = () => {
-  const [code, setCode] = useState(`function calculateTotal(items) {
-  let total = 0
-  let tempData = [];
-  const userName = "john_doe";
-  
-  for (let i = 0; i < items.length; i++) {
-    total += items[i].price;
-  }
-  
-  function formatCurrency(amount) {
-    return "$" + amount.toFixed(2);
-  }
-  
-  return formatCurrency(total);
-}`);
+  const [code, setCode] = useState("");
   const [language, setLanguage] = useState("javascript");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResults, setAnalysisResults] = useState<typeof mockAnalysis | null>(null);
+  const [analysisResults, setAnalysisResults] = useState<{issues: any[], overallScore: number} | null>(null);
   const { toast } = useToast();
 
   const handleAnalyze = async () => {
@@ -74,15 +26,16 @@ const Index = () => {
 
     setIsAnalyzing(true);
     
-    // Simulate API call
+    // Simulate API call delay
     setTimeout(() => {
-      setAnalysisResults(mockAnalysis);
+      const results = analyzeCode(code, language);
+      setAnalysisResults(results);
       setIsAnalyzing(false);
       toast({
         title: "Analysis complete!",
-        description: `Found ${mockAnalysis.issues.length} issues with an overall score of ${mockAnalysis.overallScore}/100.`,
+        description: `Found ${results.issues.length} issues with an overall score of ${results.overallScore}/100.`,
       });
-    }, 2000);
+    }, 1500);
   };
 
   const handleReset = () => {
