@@ -55,26 +55,27 @@ Respond in JSON format:
 }`;
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+    const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [
+        model: 'deepseek-reasoner',
+        messages: [
           {
-            parts: [
-              {
-                text: `${systemPrompt}\n\nPlease analyze this ${language} code:\n\n\`\`\`${language}\n${code}\n\`\`\``
-              }
-            ]
+            role: 'system',
+            content: systemPrompt
+          },
+          {
+            role: 'user',
+            content: `Please analyze this ${language} code:\n\n\`\`\`${language}\n${code}\n\`\`\``
           }
         ],
-        generationConfig: {
-          temperature: 0.2,
-          topP: 0.9,
-          maxOutputTokens: 2000,
-        }
+        temperature: 0.2,
+        top_p: 0.9,
+        max_tokens: 2000,
       }),
     });
 
@@ -84,7 +85,7 @@ Respond in JSON format:
     }
 
     const data = await response.json();
-    const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const aiResponse = data.choices[0]?.message?.content;
 
     if (!aiResponse) {
       throw new Error('No response from AI');
