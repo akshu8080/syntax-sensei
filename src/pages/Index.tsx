@@ -4,15 +4,15 @@ import { CodeEditor } from "@/components/CodeEditor";
 import { ReviewResults } from "@/components/ReviewResults";
 import { ActionButtons } from "@/components/ActionButtons";
 import { FeatureHighlights } from "@/components/FeatureHighlights";
-import { APIKeyManager } from "@/components/APIKeyManager";
+
 import { useToast } from "@/hooks/use-toast";
 import { analyzeCode } from "@/utils/codeAnalyzer";
-import { analyzeCodeWithAI } from "@/utils/aiAnalyzer";
+import { analyzeCodeWithAI } from "@/utils/secureAiAnalyzer";
 
 const Index = () => {
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("javascript");
-  const [apiKey, setApiKey] = useState("");
+  
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<{issues: any[], overallScore: number, explanation?: string} | null>(null);
   const { toast } = useToast();
@@ -27,28 +27,27 @@ const Index = () => {
       return;
     }
 
-    if (!apiKey.trim()) {
-      toast({
-        title: "API Key Required",
-        description: "Please enter your DeepSeek API key to use AI analysis.",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setIsAnalyzing(true);
     
     try {
-      // Use AI analysis if API key is provided
-      const results = await analyzeCodeWithAI({ code, language, apiKey });
-      setAnalysisResults(results);
-      toast({
-        title: "AI Analysis Complete!",
-        description: `Found ${results.issues.length} issues with a score of ${results.overallScore}/100.`,
-      });
-    } catch (error) {
-      console.error('AI Analysis failed:', error);
-      // Fallback to rule-based analysis
+      // Try AI analysis first
+      try {
+        const aiResults = await analyzeCodeWithAI({
+          code,
+          language
+        });
+        setAnalysisResults(aiResults);
+        toast({
+          title: "AI Analysis Complete!",
+          description: `Found ${aiResults.issues.length} issues with a score of ${aiResults.overallScore}/100.`,
+        });
+        return;
+      } catch (aiError) {
+        console.error("AI analysis failed:", aiError);
+        // Fall back to rule-based analysis
+      }
+      
+      // Use rule-based analysis as fallback
       const results = analyzeCode(code, language);
       setAnalysisResults({
         ...results,
@@ -58,6 +57,8 @@ const Index = () => {
         title: "Fallback Analysis Complete",
         description: `AI failed, used rule-based analysis. Found ${results.issues.length} issues.`,
       });
+    } catch (error) {
+      console.error("Analysis failed:", error);
     } finally {
       setIsAnalyzing(false);
     }
@@ -93,13 +94,9 @@ const Index = () => {
                 onReset={handleReset}
                 isAnalyzing={isAnalyzing}
                 hasCode={!!code.trim()}
-                hasApiKey={!!apiKey.trim()}
+                hasApiKey={true}
               />
               
-              <APIKeyManager
-                apiKey={apiKey}
-                onApiKeyChange={setApiKey}
-              />
             </div>
           </div>
           
