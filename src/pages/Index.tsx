@@ -30,7 +30,7 @@ const Index = () => {
     if (!apiKey.trim()) {
       toast({
         title: "API Key Required",
-        description: "Please enter your Perplexity AI API key to use AI analysis.",
+        description: "Please enter your Google AI API key to use AI analysis.",
         variant: "destructive"
       });
       return;

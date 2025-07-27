@@ -23,7 +23,7 @@ export const APIKeyManager = ({ apiKey, onApiKeyChange }: APIKeyManagerProps) =>
             <h2 className="text-lg font-semibold text-foreground">AI Configuration</h2>
           </div>
           <Badge variant="info" className="text-xs">
-            Perplexity AI
+            Google AI
           </Badge>
         </div>
 
@@ -51,13 +51,13 @@ export const APIKeyManager = ({ apiKey, onApiKeyChange }: APIKeyManagerProps) =>
 
           <div className="space-y-2">
             <Label htmlFor="api-key" className="text-sm font-medium">
-              Perplexity API Key (Temporary)
+              Google AI API Key (Temporary)
             </Label>
             <div className="flex gap-2">
               <Input
                 id="api-key"
                 type={showKey ? "text" : "password"}
-                placeholder="pplx-..."
+                placeholder="AIza..."
                 value={apiKey}
                 onChange={(e) => onApiKeyChange(e.target.value)}
                 className="font-mono text-sm"
@@ -74,12 +74,12 @@ export const APIKeyManager = ({ apiKey, onApiKeyChange }: APIKeyManagerProps) =>
             <p className="text-xs text-muted-foreground">
               Get your API key from{" "}
               <a 
-                href="https://www.perplexity.ai/settings/api" 
+                href="https://aistudio.google.com/app/apikey" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-info hover:underline"
               >
-                Perplexity AI Settings
+                Google AI Studio
               </a>
             </p>
           </div>
