@@ -142,6 +142,41 @@ const analyzeJava = (lines: string[], issues: Issue[]) => {
     const lineNum = index + 1;
     const trimmedLine = line.trim();
     
+    // Check for missing semicolons on statements that should have them
+    if (trimmedLine.length > 0 && 
+        !trimmedLine.startsWith("//") && 
+        !trimmedLine.startsWith("/*") && 
+        !trimmedLine.startsWith("*") &&
+        !trimmedLine.endsWith("{") && 
+        !trimmedLine.endsWith("}") && 
+        !trimmedLine.includes("class ") &&
+        !trimmedLine.includes("public static") &&
+        !trimmedLine.includes("private static") &&
+        !trimmedLine.includes("protected static") &&
+        !trimmedLine.includes("if (") &&
+        !trimmedLine.includes("for (") &&
+        !trimmedLine.includes("while (") &&
+        !trimmedLine.includes("else") &&
+        !trimmedLine.includes("try") &&
+        !trimmedLine.includes("catch") &&
+        !trimmedLine.includes("finally") &&
+        !trimmedLine.endsWith(";")) {
+      
+      // Check if it looks like a statement that needs a semicolon
+      if (trimmedLine.includes("System.out.println") || 
+          trimmedLine.includes("=") || 
+          trimmedLine.includes("return") ||
+          trimmedLine.match(/\w+\s*\(/)) {
+        issues.push({
+          type: "error",
+          title: "Missing semicolon",
+          description: "Java statements must end with a semicolon",
+          line: lineNum,
+          severity: "high"
+        });
+      }
+    }
+    
     // Check for class naming convention
     if (trimmedLine.includes('class ')) {
       const className = trimmedLine.split('class ')[1]?.split(/[\s{]/)[0];
