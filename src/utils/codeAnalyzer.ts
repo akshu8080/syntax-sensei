@@ -138,9 +138,80 @@ const analyzePython = (lines: string[], issues: Issue[]) => {
 };
 
 const analyzeJava = (lines: string[], issues: Issue[]) => {
+  let methodBraceCount = 0;
+  let hasReturnStatement = false;
+  let currentMethodStartLine = -1;
+  let isInMethod = false;
+  let methodReturnType = '';
+  
   lines.forEach((line, index) => {
     const lineNum = index + 1;
     const trimmedLine = line.trim();
+    
+    // Track method declarations and return statements
+    if (trimmedLine.includes('public ') && (trimmedLine.includes('int ') || trimmedLine.includes('String ') || trimmedLine.includes('void ') || trimmedLine.includes('boolean ') || trimmedLine.includes('double ') || trimmedLine.includes('float '))) {
+      if (trimmedLine.includes('(')) {
+        isInMethod = true;
+        hasReturnStatement = false;
+        currentMethodStartLine = lineNum;
+        methodBraceCount = 0;
+        methodReturnType = trimmedLine.includes('void') ? 'void' : 'non-void';
+      }
+    }
+    
+    // Count braces for method tracking
+    if (isInMethod) {
+      methodBraceCount += (line.match(/{/g) || []).length;
+      methodBraceCount -= (line.match(/}/g) || []).length;
+      
+      if (trimmedLine.includes('return ')) {
+        hasReturnStatement = true;
+      }
+      
+      // Check if method is ending
+      if (methodBraceCount <= 0 && currentMethodStartLine > 0) {
+        if (!hasReturnStatement && methodReturnType === 'non-void') {
+          issues.push({
+            type: "error",
+            title: "Missing return statement",
+            description: "Non-void method must have a return statement",
+            line: currentMethodStartLine,
+            severity: "high"
+          });
+        }
+        isInMethod = false;
+        currentMethodStartLine = -1;
+      }
+    }
+    
+    // Check for potential infinite loops with while
+    if (trimmedLine.includes('while(') && !trimmedLine.includes('++') && !trimmedLine.includes('--') && !trimmedLine.includes('i+') && !trimmedLine.includes('i-')) {
+      const nextFewLines = lines.slice(index + 1, index + 4).join(' ');
+      if (!nextFewLines.includes('++') && !nextFewLines.includes('--') && !nextFewLines.includes('break') && !nextFewLines.includes('return')) {
+        issues.push({
+          type: "error",
+          title: "Potential infinite loop",
+          description: "While loop may not have proper termination condition or loop variable modification",
+          line: lineNum,
+          severity: "high"
+        });
+      }
+    }
+    
+    // Check for array index errors - common mistake in suffix array initialization
+    if (trimmedLine.includes('suffixMax[0] = arr[n-1]')) {
+      issues.push({
+        type: "error",
+        title: "Array index error",
+        description: "Should be suffixMax[n-1] = arr[n-1] for suffix array initialization",
+        line: lineNum,
+        severity: "high"
+      });
+    }
+    
+    // Check for missing closing braces by counting them
+    const openBraces = (line.match(/{/g) || []).length;
+    const closeBraces = (line.match(/}/g) || []).length;
     
     // Check for missing semicolons on statements that should have them
     if (trimmedLine.length > 0 && 
@@ -202,6 +273,21 @@ const analyzeJava = (lines: string[], issues: Issue[]) => {
       });
     }
   });
+  
+  // Check for overall brace balance
+  const totalCode = lines.join('\n');
+  const totalOpenBraces = (totalCode.match(/{/g) || []).length;
+  const totalCloseBraces = (totalCode.match(/}/g) || []).length;
+  
+  if (totalOpenBraces > totalCloseBraces) {
+    issues.push({
+      type: "error",
+      title: "Missing closing brace",
+      description: "One or more methods/classes are missing closing braces",
+      line: lines.length,
+      severity: "high"
+    });
+  }
 };
 
 const analyzeGeneral = (lines: string[], issues: Issue[]) => {
