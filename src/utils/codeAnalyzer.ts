@@ -15,12 +15,29 @@ export const analyzeCode = (code: string, language: string): AnalysisResult => {
   const lines = code.split('\n');
   const issues: Issue[] = [];
   
+  // Detect actual language from code content
+  const detectedLanguage = detectLanguage(code);
+  
+  // Check for language mismatch
+  if (detectedLanguage && detectedLanguage !== language) {
+    issues.push({
+      type: "warning",
+      title: "Language mismatch detected",
+      description: `You selected '${language}' but the code appears to be '${detectedLanguage}'. Please select the correct language for accurate analysis.`,
+      line: 1,
+      severity: "high"
+    });
+  }
+  
+  // Use detected language if there's a clear mismatch, otherwise use selected language
+  const effectiveLanguage = detectedLanguage && detectedLanguage !== language ? detectedLanguage : language;
+  
   // Language-specific analysis
-  if (language === 'javascript' || language === 'typescript') {
+  if (effectiveLanguage === 'javascript' || effectiveLanguage === 'typescript') {
     analyzeJavaScript(lines, issues);
-  } else if (language === 'python') {
+  } else if (effectiveLanguage === 'python') {
     analyzePython(lines, issues);
-  } else if (language === 'java') {
+  } else if (effectiveLanguage === 'java') {
     analyzeJava(lines, issues);
   } else {
     analyzeGeneral(lines, issues);
@@ -40,6 +57,43 @@ export const analyzeCode = (code: string, language: string): AnalysisResult => {
     issues,
     overallScore: Math.max(0, Math.min(100, score))
   };
+};
+
+const detectLanguage = (code: string): string | null => {
+  const trimmedCode = code.trim();
+  
+  // Java detection
+  if (trimmedCode.includes('public class ') || 
+      trimmedCode.includes('private class ') ||
+      trimmedCode.includes('System.out.println') ||
+      trimmedCode.includes('public static void main') ||
+      trimmedCode.includes('public int ') ||
+      trimmedCode.includes('private int ') ||
+      (trimmedCode.includes('class ') && trimmedCode.includes('{'))) {
+    return 'java';
+  }
+  
+  // Python detection
+  if (trimmedCode.includes('def ') ||
+      trimmedCode.includes('import ') ||
+      trimmedCode.includes('print(') ||
+      trimmedCode.includes('if __name__ == "__main__"') ||
+      /^\s*#/.test(trimmedCode)) {
+    return 'python';
+  }
+  
+  // JavaScript/TypeScript detection
+  if (trimmedCode.includes('function ') ||
+      trimmedCode.includes('const ') ||
+      trimmedCode.includes('let ') ||
+      trimmedCode.includes('var ') ||
+      trimmedCode.includes('console.log') ||
+      trimmedCode.includes('=>') ||
+      trimmedCode.includes('import ') && trimmedCode.includes('from ')) {
+    return 'javascript';
+  }
+  
+  return null;
 };
 
 const analyzeJavaScript = (lines: string[], issues: Issue[]) => {
